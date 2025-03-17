@@ -25,4 +25,7 @@ void MK_R_rotateFrontAroundCenter(double percentage);
 void MK_R_rotateThroughCenter(double percentage);
 /* 右摇杆后置圆心逆时针旋转函数 */
 void MK_R_rotateBackAroundCenter(double percentage);  // 注意：原函数缺少参数类型声明
+
+void MK_Task(void * pvParameters);
+void run_MK_Task_on_Core_0();
 #endif

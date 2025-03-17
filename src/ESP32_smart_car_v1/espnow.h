@@ -3,6 +3,9 @@
 #define __ESPNOT__H
 #pragma once
 
+#define DEBUG_MODE 1
+
+extern const uint8_t channel;
 
 extern uint32_t motor0_L_TargetSpeed;
 extern uint32_t motor1_L_TargetSpeed;

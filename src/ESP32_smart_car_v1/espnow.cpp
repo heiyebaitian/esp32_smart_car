@@ -4,9 +4,6 @@
 #include "joystick_analysis.h"
 #include "MK_encoder_motor_driver.h"
 
-#define CHANNEL 1
-
-
 
 // 设置数据结构体
 typedef struct Data_Package {
@@ -55,26 +52,28 @@ void OnDataRecv(const esp_now_recv_info_t* mac, const uint8_t *incomingData, int
     //void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {  
     memcpy(&espnow_data, incomingData, sizeof(espnow_data));
     const int16_t speed_rpm = 20;
-    double L_angle = calculate_angle(espnow_data.j1PotX, espnow_data.j1PotY, 127);
+    double L_angle = handle_joystick_adsorption( calculate_angle(espnow_data.j1PotX, espnow_data.j1PotY, 127) );
     double L_length = calculate_length(espnow_data.j1PotX, espnow_data.j1PotY, 127);
-    double L_percentage = calculate_joystick_percentage(espnow_data.j1PotX, espnow_data.j1PotY, 127);
+    double L_percentage = handle_joystick_dead_zone( calculate_joystick_percentage(espnow_data.j1PotX, espnow_data.j1PotY, 127) );
     double L_Apercentage = groupA_motor_percentage(L_angle, L_percentage);
     double L_Bpercentage = groupB_motor_percentage(L_angle, L_percentage);
 
 
     double R_angle = calculate_angle(espnow_data.j2PotX, espnow_data.j2PotY, 127);
     double R_length = calculate_length(espnow_data.j2PotX, espnow_data.j2PotY, 127);
-    double R_percentage = calculate_joystick_percentage(espnow_data.j2PotX, espnow_data.j2PotY, 127);
-    Serial.printf("\nL角度为: %.2f 度\n", L_angle);
-    Serial.printf("L向量的长度为: %.2f\n", L_length);
-    Serial.printf("L杆量: %.2lf\n", L_percentage);
-    Serial.printf("R角度为: %.2f 度\n", R_angle);
-    Serial.printf("R向量的长度为: %.2f\n", R_length);
-    Serial.printf("R杆量: %.2lf\n", R_percentage);
-    Serial.printf("A组分量: %.2lf\n", L_Apercentage);
-    Serial.printf("B组分量: %.2lf\n", L_Bpercentage);
+    double R_percentage = handle_joystick_dead_zone( calculate_joystick_percentage(espnow_data.j2PotX, espnow_data.j2PotY, 127) );
+    #if DEBUG_MODE == 1
+      Serial.printf("\nL角度为: %.2f 度\n", L_angle);
+      Serial.printf("L向量的长度为: %.2f\n", L_length);
+      Serial.printf("L杆量: %.2lf\n", L_percentage);
+      Serial.printf("R角度为: %.2f 度\n", R_angle);
+      Serial.printf("R向量的长度为: %.2f\n", R_length);
+      Serial.printf("R杆量: %.2lf\n", R_percentage);
+      Serial.printf("A组分量: %.2lf\n", L_Apercentage);
+      Serial.printf("B组分量: %.2lf\n", L_Bpercentage);
+    #endif
 
-    if(L_percentage <= 0.05){
+    if(L_percentage == 0){
       // 防误触
       MK_L_StopSpeed();
     }
@@ -84,7 +83,7 @@ void OnDataRecv(const esp_now_recv_info_t* mac, const uint8_t *incomingData, int
     }
 
 
-    if(R_percentage <= 0.05){
+    if(R_percentage == 0){
       MK_R_StopSpeed();
     }
     else if(R_angle > 330 || R_angle <= 30) MK_R_rotateThroughCenter(-R_percentage);
@@ -102,6 +101,19 @@ void OnDataRecv(const esp_now_recv_info_t* mac, const uint8_t *incomingData, int
 
 // Init ESP Now with fallback
 void InitESPNow() {
+  WiFi.mode(WIFI_STA);
+  WiFi.setChannel(channel);
+  while (!WiFi.STA.started()) {
+    delay(100);
+  }
+
+  #if DEBUG_MODE == 1
+    Serial.println("Wi-Fi parameters:");
+    Serial.println("  Mode: STA");
+    Serial.println("  MAC Address: " + WiFi.macAddress());
+    Serial.printf("  Channel: %d\n", channel);
+  #endif
+
   if (esp_now_init() == 0) {
     Serial.println("ESPNow Init Success");
   }
@@ -112,4 +124,6 @@ void InitESPNow() {
     // or Simply Restart
     ESP.restart();
   }
+  esp_now_register_recv_cb(OnDataRecv); // 注册epsnow回调
+  resetData();  //  清空数据
 }

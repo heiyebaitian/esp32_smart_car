@@ -5,6 +5,14 @@
 
 #define CHANNEL 1
 
+uint32_t motor0_L_TargetSpeed = 0;
+uint32_t motor1_L_TargetSpeed = 0;
+uint32_t motor2_L_TargetSpeed = 0;
+uint32_t motor3_L_TargetSpeed = 0;
+uint32_t motor0_R_TargetSpeed = 0;
+uint32_t motor1_R_TargetSpeed = 0;
+uint32_t motor2_R_TargetSpeed = 0;
+uint32_t motor3_R_TargetSpeed = 0;
 
 
 void setup() {
@@ -41,5 +49,5 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
+  
 }
