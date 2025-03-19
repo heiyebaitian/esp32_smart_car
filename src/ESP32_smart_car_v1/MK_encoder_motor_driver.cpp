@@ -70,11 +70,20 @@ void MK_Init(){
   g_encoder_motor_3.Init();
 }
 
+/* 底盘运动执行 */
 void MK_run(){
   g_encoder_motor_0.RunSpeed(motor0_L_TargetSpeed + motor0_R_TargetSpeed);
   g_encoder_motor_1.RunSpeed(motor1_L_TargetSpeed + motor1_R_TargetSpeed);
   g_encoder_motor_2.RunSpeed(motor2_L_TargetSpeed + motor2_R_TargetSpeed);
   g_encoder_motor_3.RunSpeed(motor3_L_TargetSpeed + motor3_R_TargetSpeed);
+}
+
+/* 底盘运动停止 */
+void MK_stop(){
+  g_encoder_motor_0.Stop();
+  g_encoder_motor_1.Stop();
+  g_encoder_motor_2.Stop();
+  g_encoder_motor_3.Stop();
 }
 
 /* 左摇杆停止 */
@@ -128,7 +137,7 @@ void MK_R_rotateBackAroundCenter(double percentage){
 /* MK底盘驱动任务 */
 void MK_Task(void * pvParameters){
   #if DEBUG_MODE == 1
-    Serial.print("MK_Task running on core ");
+    Serial.print("[MK_Task]MK_Task running on core ");
     Serial.println(xPortGetCoreID());
   #endif
 
@@ -141,6 +150,7 @@ void MK_Task(void * pvParameters){
   // esp_task_wdt_init(&wdt_cfg);
 
   MK_Init();  //  初始化麦克纳姆轮底盘电机
+  MK_stop();
   vTaskDelay(pdMS_TO_TICKS(1000));
 
   while(1){
@@ -149,8 +159,9 @@ void MK_Task(void * pvParameters){
     vTaskDelay(pdMS_TO_TICKS(1));  // 延迟1ms避免长时间占用
     esp_task_wdt_reset(); //  喂狗
   }
-
-  Serial.println("[MK_Task]Ending MK_Task");
+  #if DEBUG_MODE == 1
+    Serial.println("[MK_Task]Ending MK_Task");
+  #endif
   vTaskDelete(NULL);
 }
 

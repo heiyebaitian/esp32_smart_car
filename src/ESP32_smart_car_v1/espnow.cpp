@@ -3,6 +3,7 @@
 #include "espnow.h"
 #include "joystick_analysis.h"
 #include "MK_encoder_motor_driver.h"
+#include "CAS.h"
 
 
 // 设置数据结构体
@@ -62,18 +63,20 @@ void OnDataRecv(const esp_now_recv_info_t* mac, const uint8_t *incomingData, int
     double R_angle = calculate_angle(espnow_data.j2PotX, espnow_data.j2PotY, 127);
     double R_length = calculate_length(espnow_data.j2PotX, espnow_data.j2PotY, 127);
     double R_percentage = handle_joystick_dead_zone( calculate_joystick_percentage(espnow_data.j2PotX, espnow_data.j2PotY, 127) );
+
     #if DEBUG_MODE == 1
-      Serial.printf("\nL角度为: %.2f 度\n", L_angle);
-      Serial.printf("L向量的长度为: %.2f\n", L_length);
-      Serial.printf("L杆量: %.2lf\n", L_percentage);
-      Serial.printf("R角度为: %.2f 度\n", R_angle);
-      Serial.printf("R向量的长度为: %.2f\n", R_length);
-      Serial.printf("R杆量: %.2lf\n", R_percentage);
-      Serial.printf("A组分量: %.2lf\n", L_Apercentage);
-      Serial.printf("B组分量: %.2lf\n", L_Bpercentage);
+      Serial.printf("\n[espnow_Task]L角度为: %.2f 度\n", L_angle);
+      Serial.printf("[espnow_Task]L向量的长度为: %.2f\n", L_length);
+      Serial.printf("[espnow_Task]L杆量: %.2lf\n", L_percentage);
+      Serial.printf("[espnow_Task]R角度为: %.2f 度\n", R_angle);
+      Serial.printf("[espnow_Task]R向量的长度为: %.2f\n", R_length);
+      Serial.printf("[espnow_Task]R杆量: %.2lf\n", R_percentage);
+      Serial.printf("[espnow_Task]A组分量: %.2lf\n", L_Apercentage);
+      Serial.printf("[espnow_Task]B组分量: %.2lf\n", L_Bpercentage);
     #endif
 
-    if(L_percentage == 0){
+    /* 左摇杆判断 */
+    if(L_percentage == 0 || CAS_flag == CAS_TRIGGERED){
       // 防误触
       MK_L_StopSpeed();
     }
@@ -82,8 +85,9 @@ void OnDataRecv(const esp_now_recv_info_t* mac, const uint8_t *incomingData, int
       MK_L_RunSpeed(L_Apercentage, L_Bpercentage);
     }
 
-
-    if(R_percentage == 0){
+    /* 右摇杆判断 */
+    if(R_percentage == 0 || CAS_flag == CAS_TRIGGERED){
+      // 防误触
       MK_R_StopSpeed();
     }
     else if(R_angle > 330 || R_angle <= 30) MK_R_rotateThroughCenter(-R_percentage);
@@ -93,6 +97,10 @@ void OnDataRecv(const esp_now_recv_info_t* mac, const uint8_t *incomingData, int
     else if(R_angle > 210 && R_angle <= 270) MK_R_rotateBackAroundCenter(R_percentage); 
     else if(R_angle > 270 && R_angle <= 330) MK_R_rotateBackAroundCenter(-R_percentage); 
 
+    /* 右肩键解除CAS触发状态至临时解除状态 */
+    if(espnow_data.buttonRB == 0 && CAS_flag == CAS_TRIGGERED){
+      CAS_flag = CAS_TEMPORARY_RELEASE;
+    }
 
 
 }
@@ -108,17 +116,17 @@ void InitESPNow() {
   }
 
   #if DEBUG_MODE == 1
-    Serial.println("Wi-Fi parameters:");
-    Serial.println("  Mode: STA");
-    Serial.println("  MAC Address: " + WiFi.macAddress());
-    Serial.printf("  Channel: %d\n", channel);
+    Serial.println("[espnow_Task]Wi-Fi parameters:");
+    Serial.println("[espnow_Task]  Mode: STA");
+    Serial.println("[espnow_Task]  MAC Address: " + WiFi.macAddress());
+    Serial.printf("[espnow_Task]  Channel: %d\n", channel);
   #endif
 
   if (esp_now_init() == 0) {
-    Serial.println("ESPNow Init Success");
+    Serial.println("[espnow_Task]ESPNow Init Success");
   }
   else {
-    Serial.println("ESPNow Init Failed");
+    Serial.println("[espnow_Task]ESPNow Init Failed");
     // Retry InitESPNow, add a counte and then restart?
     // InitESPNow();
     // or Simply Restart

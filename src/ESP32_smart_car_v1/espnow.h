@@ -3,9 +3,12 @@
 #define __ESPNOT__H
 #pragma once
 
-#define DEBUG_MODE 1
+#include "CAS.h"
+
+#define DEBUG_MODE 0
 
 extern const uint8_t channel;
+extern CAS_STATE CAS_flag;
 
 extern uint32_t motor0_L_TargetSpeed;
 extern uint32_t motor1_L_TargetSpeed;
