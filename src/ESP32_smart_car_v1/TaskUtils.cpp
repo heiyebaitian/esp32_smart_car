@@ -9,9 +9,72 @@
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
 
-uint32_t TaskDaemon_error_number = 0;
+#define DEBUG_MODE 1
+
+#define TASK_ERROR_NUMBER_MAX 10 // 任务错误允许的最大次数，超过此次数将自动重启系统
+
+uint32_t TaskDaemon_error_number = 0; //  任务错误计数器
 
 TaskHandle_t TaskDaemon_Task_TaskHandle; // TaskDaemon_Task任务句柄
+
+/* 任务状态检查函数 */
+int Taks_State_Check(){
+  if(eTaskGetState(MK_Task_TaskHandle) == eDeleted){
+    // 检查MK底盘驱动任务是否删除
+    #if DEBUG_MODE == 1
+      Serial.println("[TaskDaemon]ERROR:MK_Task is has been deleted,Trying to restart the task.");
+    #endif
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    run_MK_Task_on_Core_0();
+    TaskDaemon_error_number++;
+  }
+
+  if(eTaskGetState(MK_Task_TaskHandle) == eSuspended){
+    // 检查MK底盘驱动任务是否挂起
+    #if DEBUG_MODE == 1
+      Serial.println("[TaskDaemon]Warning:MK_Task is suspended");
+    #endif
+  }
+  
+  if(eTaskGetState(CAS_Task_TaskHandle) == eDeleted){
+    // 检查CAS防碰撞系统任务是否删除
+    #if DEBUG_MODE == 1
+      Serial.println("[TaskDaemon]ERROR:CAS_Task is has been deleted,Trying to restart the task.");
+    #endif
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    run_CAS_Task_on_Core_0();
+    TaskDaemon_error_number++;
+    return 1;
+  }
+
+  if(eTaskGetState(CAS_Task_TaskHandle) == eSuspended){
+    // 检查MCAS防碰撞系统任务是否挂起
+    #if DEBUG_MODE == 1
+      Serial.println("[TaskDaemon]Warning:CAS_Task is suspended");
+    #endif
+  }
+
+  if(eTaskGetState(SonoLuminAlert_Task_TaskHandle) == eDeleted){
+    // 检查声光报警任务是否删除
+    #if DEBUG_MODE == 1
+      Serial.println("[TaskDaemon]ERROR:SonoLuminAlert_Task is has been deleted,Trying to restart the task.");
+    #endif
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    run_SonoLuminAlert_Task_on_Core_1();
+    TaskDaemon_error_number++;
+    return 1;
+  }
+
+  if(eTaskGetState(SonoLuminAlert_Task_TaskHandle) == eSuspended){
+    // 检查声光报警任务是否挂起
+    #if DEBUG_MODE == 1
+      Serial.println("[TaskDaemon]Warning:SonoLuminAlert_Task is suspended");
+    #endif
+  }
+  return 0;
+}
+
+
 
 /* FreeRTOS任务守护进程 */
 void FreeRTOS_Task_Daemon(void * pvParameters){
@@ -21,26 +84,13 @@ void FreeRTOS_Task_Daemon(void * pvParameters){
   #endif
 
   //esp_task_wdt_add(NULL);  // 添加当前任务到看门狗监控列表
+  if(Taks_State_Check() == 0){Speaker_mode = SPEAKER_POWER_ON_TONE;} // 如果所有任务正常则播放开机提示音
 
   while(1){
-    if(eTaskGetState(MK_Task_TaskHandle) == eDeleted){
-      // 检查MK底盘驱动任务是否离线
-      #if DEBUG_MODE == 1
-        Serial.println("[TaskDaemon]MK_Task is has been deleted,Trying to restart the task.");
-      #endif
-      run_MK_Task_on_Core_0();
-      TaskDaemon_error_number++;
-    }
-    if(eTaskGetState(CAS_Task_TaskHandle) == eDeleted){
-      // 检查CAS防碰撞系统任务是否离线
-      #if DEBUG_MODE == 1
-        Serial.println("[TaskDaemon]CAS_Task is has been deleted,Trying to restart the task.");
-      #endif
-      run_CAS_Task_on_Core_0();
-      TaskDaemon_error_number++;
-    }
+    Taks_State_Check();
 
-    if(TaskDaemon_error_number > 10){
+    if(TaskDaemon_error_number > TASK_ERROR_NUMBER_MAX){
+      // 如果错误次数超限制，则重启系统
       Serial.println("[TaskDaemon]The number of times the task has gone offline has exceeded the preset threshold. The system will now initiate a restart.");
       vTaskDelay(pdMS_TO_TICKS(2000));
       ESP.restart();
@@ -62,7 +112,7 @@ void run_TaskDaemon_Task_on_Core_1(){
   xTaskCreatePinnedToCore(
                     FreeRTOS_Task_Daemon,   /* Task function. */
                     "TaskDaemon",     /* name of task. */
-                    4096,       /* Stack size of task */
+                    2048,       /* Stack size of task */
                     NULL,        /* parameter of the task */
                     3,           /* priority of the task */
                     &TaskDaemon_Task_TaskHandle,      /* Task handle to keep track of created task */

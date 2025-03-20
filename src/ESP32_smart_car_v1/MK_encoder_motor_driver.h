@@ -2,6 +2,13 @@
 #define __MK_ENCODE_MOTOR_DRIVER__H
 #pragma once
 
+typedef enum
+{
+      MK_READY = 0, MK_LOCK, MK_ERROR
+} MK_STATE;
+
+extern MK_STATE MK_flag;
+
 extern uint32_t motor0_L_TargetSpeed;
 extern uint32_t motor1_L_TargetSpeed;
 extern uint32_t motor2_L_TargetSpeed;

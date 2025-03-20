@@ -8,16 +8,22 @@
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
 
-#define NUMBER_OF_MEASYREMENTS 5  //  测量次数
-#define TRIGGER_DISTANCE 100  //  防碰撞触发距离(单位:mm)
+#define DEBUG_MODE 1
+
+#define NUMBER_OF_MEASYREMENTS 3  //  测量次数
+#define TRIGGER_DISTANCE 150  //  防碰撞触发距离(单位:mm)
+#define SENSOR_ERROR_NUMBER_MAX 5  //  传感器允许的最大错误次数
 VL53L0X sensor;
 
 TaskHandle_t CAS_Task_TaskHandle; // CAS_Task任务句柄
+
+uint32_t sensor_error_number = 0; //  传感器错误计数器
 
 /* 防碰撞初始化 */
 int CAS_Init(){
   sensor.setTimeout(500);
   Wire.begin();
+  sensor_error_number = 0;  //  传感器错误计数器清零
   if (!sensor.init())
   {
     Serial.println("[CAS_Task]Failed to detect and initialize sensor!");
@@ -29,7 +35,7 @@ int CAS_Init(){
 
 /* 防碰撞保护任务 */
 void CAS_Task(void * pvParameters){
-  #if CAS_DEBUG_MODE == 1
+  #if DEBUG_MODE == 1
     Serial.print("[CAS_Task]CAS_Task running on core ");
     Serial.println(xPortGetCoreID());
   #endif
@@ -38,9 +44,9 @@ void CAS_Task(void * pvParameters){
 
   if(CAS_Init() == 1){
     // 初始化失败删除任务
-    #if CAS_DEBUG_MODE == 1
+    #if DEBUG_MODE == 1
       Serial.println("[CAS_Task]Init ERROR!");
-      Serial.println("[CAS_Task]Ending MK_Task");
+      Serial.println("[CAS_Task]Ending CAS_Task");
     #endif
     vTaskDelete(NULL);
   }
@@ -50,22 +56,24 @@ void CAS_Task(void * pvParameters){
   while(1){
     ranging_distance = 0; //  清空数据
 
+    /* CAS确认等待处理 */
     if(CAS_flag == CAS_TRIGGERED){
       // 已触发防碰撞保护，尚未复位，则直接跳出
-      #if CAS_DEBUG_MODE == 1
+      #if DEBUG_MODE == 1
         Serial.println("[CAS_Task]CAS wait.");
       #endif
-      vTaskDelay(pdMS_TO_TICKS(20));
+      vTaskSuspend(CAS_Task_TaskHandle); // 等待期间挂起CAS任务
       //esp_task_wdt_reset(); //  喂狗
       continue;
     } 
 
+    /* CAS临时关闭处理 */
     if(CAS_flag == CAS_TEMPORARY_RELEASE){
-      // 临时关闭防碰撞保护30s
-      #if CAS_DEBUG_MODE == 1
+      // 临时关闭防碰撞保护15s
+      #if DEBUG_MODE == 1
         Serial.println("[CAS_Task]CAS Temporary release.");
       #endif
-      vTaskDelay(pdMS_TO_TICKS(30000)); 
+      vTaskDelay(pdMS_TO_TICKS(15000)); 
       CAS_flag = CAS_READY; // 启动防碰撞保护
     }
 
@@ -74,23 +82,32 @@ void CAS_Task(void * pvParameters){
       ranging_distance = sensor.readRangeContinuousMillimeters() + ranging_distance;
     }
     
-
+    /* 传感器读取超时处理 */
     if(sensor.timeoutOccurred()){
-      #if CAS_DEBUG_MODE == 1
+      #if DEBUG_MODE == 1
         Serial.println("[CAS_Task]VL53L0X read timeout!");
       #endif
+      sensor_error_number++;
+      if(sensor_error_number >= SENSOR_ERROR_NUMBER_MAX){
+        #if DEBUG_MODE == 1
+          Serial.println("[CAS_Task]Sensor ERROR!");
+          Serial.println("[CAS_Task]Ending CAS_Task");
+        #endif
+        vTaskDelete(NULL);
+      }
       continue;  // 读取发生超时错误，结束本次测量
     }
     else{
       ranging_distance = ranging_distance / NUMBER_OF_MEASYREMENTS;
     }
 
-    #if CAS_DEBUG_MODE == 1
+    #if DEBUG_MODE == 1
         Serial.printf("[CAS_Task]ranging_distance = %d\n",ranging_distance);
     #endif
 
-    if(CAS_flag == CAS_READY && ranging_distance <= 100){
-      #if CAS_DEBUG_MODE == 1
+    /* CAS防碰撞处理 */
+    if(CAS_flag == CAS_READY && ranging_distance <= TRIGGER_DISTANCE){
+      #if DEBUG_MODE == 1
         Serial.println("[CAS_Task]CAS Triggered!");
       #endif
       CAS_flag = CAS_TRIGGERED; //  设置状态标记为已触发碰撞保护
@@ -112,7 +129,7 @@ void CAS_Task(void * pvParameters){
 
   }
 
-  #if CAS_DEBUG_MODE == 1
+  #if DEBUG_MODE == 1
     Serial.println("[CAS_Task]Ending CAS_Task");
   #endif
     vTaskDelete(NULL);

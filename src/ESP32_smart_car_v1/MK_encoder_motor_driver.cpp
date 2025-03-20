@@ -72,10 +72,17 @@ void MK_Init(){
 
 /* 底盘运动执行 */
 void MK_run(){
-  g_encoder_motor_0.RunSpeed(motor0_L_TargetSpeed + motor0_R_TargetSpeed);
-  g_encoder_motor_1.RunSpeed(motor1_L_TargetSpeed + motor1_R_TargetSpeed);
-  g_encoder_motor_2.RunSpeed(motor2_L_TargetSpeed + motor2_R_TargetSpeed);
-  g_encoder_motor_3.RunSpeed(motor3_L_TargetSpeed + motor3_R_TargetSpeed);
+  if(MK_flag == MK_READY){
+    // 如果底盘就绪则执行动作
+    g_encoder_motor_0.RunSpeed(motor0_L_TargetSpeed + motor0_R_TargetSpeed);
+    g_encoder_motor_1.RunSpeed(motor1_L_TargetSpeed + motor1_R_TargetSpeed);
+    g_encoder_motor_2.RunSpeed(motor2_L_TargetSpeed + motor2_R_TargetSpeed);
+    g_encoder_motor_3.RunSpeed(motor3_L_TargetSpeed + motor3_R_TargetSpeed);
+  }
+  else{
+    // 其他情况紧急停止
+    MK_stop();
+  }
 }
 
 /* 底盘运动停止 */
@@ -151,11 +158,11 @@ void MK_Task(void * pvParameters){
 
   MK_Init();  //  初始化麦克纳姆轮底盘电机
   MK_stop();
+  MK_flag = MK_LOCK;  //  底盘锁定
   vTaskDelay(pdMS_TO_TICKS(1000));
 
   while(1){
     MK_run();
-    //delay(1);
     vTaskDelay(pdMS_TO_TICKS(1));  // 延迟1ms避免长时间占用
     esp_task_wdt_reset(); //  喂狗
   }

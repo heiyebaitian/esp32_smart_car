@@ -2,7 +2,7 @@
 #define __CAS__H
 #pragma once
 
-#define CAS_DEBUG_MODE 1
+
 
 typedef enum
 {

@@ -5,6 +5,9 @@
 #include "MK_encoder_motor_driver.h"
 #include "CAS.h"
 
+#define DEBUG_MODE 0
+
+bool buttonR1_last_state = 0; // 右按键上一次状态
 
 // 设置数据结构体
 typedef struct Data_Package {
@@ -100,8 +103,15 @@ void OnDataRecv(const esp_now_recv_info_t* mac, const uint8_t *incomingData, int
     /* 右肩键解除CAS触发状态至临时解除状态 */
     if(espnow_data.buttonRB == 0 && CAS_flag == CAS_TRIGGERED){
       CAS_flag = CAS_TEMPORARY_RELEASE;
+      vTaskResume(CAS_Task_TaskHandle); // 恢复被挂起的CAS任务
     }
 
+    /* 右键开关底盘锁 */
+    if(espnow_data.buttonR1 == 0 && buttonR1_last_state == 1){
+      if(MK_flag == MK_LOCK){MK_flag = MK_READY;} //  如果锁定则解锁
+      else if(MK_flag == MK_READY){MK_flag = MK_LOCK;} //  如果解锁则锁定
+    }
+    buttonR1_last_state = espnow_data.buttonR1;
 
 }
 
