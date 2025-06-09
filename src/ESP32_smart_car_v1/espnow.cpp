@@ -100,6 +100,14 @@ void OnDataRecv(const esp_now_recv_info_t* mac, const uint8_t *incomingData, int
     else if(R_angle > 210 && R_angle <= 270) MK_R_rotateBackAroundCenter(R_percentage); 
     else if(R_angle > 270 && R_angle <= 330) MK_R_rotateBackAroundCenter(-R_percentage); 
 
+
+    /* 左肩键解除火警报警 */
+    if(espnow_data.buttonLB == 0){
+      if(SLA_mode == SLA_FIRE){
+        SLA_mode = SLA_READY;
+      }
+    }
+
     /* 右肩键解除CAS触发状态至临时解除状态 */
     if(espnow_data.buttonRB == 0 && CAS_flag == CAS_TRIGGERED){
       CAS_flag = CAS_TEMPORARY_RELEASE;

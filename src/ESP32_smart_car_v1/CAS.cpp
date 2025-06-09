@@ -73,6 +73,10 @@ void CAS_Task(void * pvParameters){
       #if DEBUG_MODE == 1
         Serial.println("[CAS_Task]CAS Temporary release.");
       #endif
+      // 降级声光报警
+      if(SLA_mode == SLA_CAS_TRIGGERED){
+        SLA_mode = SLA_READY;
+      }
       vTaskDelay(pdMS_TO_TICKS(15000)); 
       CAS_flag = CAS_READY; // 启动防碰撞保护
     }
@@ -122,6 +126,11 @@ void CAS_Task(void * pvParameters){
       motor3_R_TargetSpeed = 0;
       //  强制停止底盘运动
       MK_stop();
+      // 触发防碰撞声光报警
+      if(SLA_mode < SLA_CAS_TRIGGERED){
+        SLA_mode = SLA_CAS_TRIGGERED;
+      }
+      
     }
 
     vTaskDelay(pdMS_TO_TICKS(50));

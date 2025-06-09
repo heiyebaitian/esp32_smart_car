@@ -49,10 +49,22 @@
 
 typedef enum
 {
-      SPEAKER_READY = 0, SPEAKER_POWER_ON_TONE, SPEAKER_CAS_PROMPT_TONE
+      SPEAKER_OFF = 0, SPEAKER_POWER_ON_TONE, SPEAKER_CAS_PROMPT_TONE
 } SPEAKER_MODE;
 
+typedef enum
+{
+      LIGHT_OFF = 0, LIGHT_R, LIGHT_G, LIGHT_B, LIGHT_Y, LIGHT_W
+} LIGHT_MODE;
+
+typedef enum
+{
+      SLA_READY = 0, SLA_BOOT_OK, SLA_CAS_TRIGGERED, SLA_FIRE, SLA_SYS_ERROR
+} SLA_MODE;
+
 extern SPEAKER_MODE Speaker_mode;
+extern LIGHT_MODE Light_mode;
+extern SLA_MODE SLA_mode;
 
 void power_on_tone_play();
 void SonoLuminAlert_Task(void * pvParameters);

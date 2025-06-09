@@ -11,7 +11,7 @@
 
 #define DEBUG_MODE 1
 
-#define TASK_ERROR_NUMBER_MAX 10 // 任务错误允许的最大次数，超过此次数将自动重启系统
+#define TASK_ERROR_NUMBER_MAX 5 // 任务错误允许的最大次数，超过此次数将自动重启系统
 
 uint32_t TaskDaemon_error_number = 0; //  任务错误计数器
 
@@ -44,7 +44,6 @@ int Taks_State_Check(){
     vTaskDelay(pdMS_TO_TICKS(1000));
     run_CAS_Task_on_Core_0();
     TaskDaemon_error_number++;
-    return 1;
   }
 
   if(eTaskGetState(CAS_Task_TaskHandle) == eSuspended){
@@ -62,7 +61,6 @@ int Taks_State_Check(){
     vTaskDelay(pdMS_TO_TICKS(1000));
     run_SonoLuminAlert_Task_on_Core_1();
     TaskDaemon_error_number++;
-    return 1;
   }
 
   if(eTaskGetState(SonoLuminAlert_Task_TaskHandle) == eSuspended){
@@ -84,10 +82,20 @@ void FreeRTOS_Task_Daemon(void * pvParameters){
   #endif
 
   //esp_task_wdt_add(NULL);  // 添加当前任务到看门狗监控列表
-  if(Taks_State_Check() == 0){Speaker_mode = SPEAKER_POWER_ON_TONE;} // 如果所有任务正常则播放开机提示音
+  Taks_State_Check();
 
   while(1){
     Taks_State_Check();
+
+    if(TaskDaemon_error_number > TASK_ERROR_NUMBER_MAX-1){
+      // 如果错误次数超限制，则重启系统
+      Serial.println("[TaskDaemon]The number of TaskDaemon_error_number is too much.");
+      // 触发系统错误声光报警
+      if(SLA_mode < SLA_SYS_ERROR){
+        SLA_mode = SLA_SYS_ERROR;
+      }
+      vTaskDelay(pdMS_TO_TICKS(2000));
+    }
 
     if(TaskDaemon_error_number > TASK_ERROR_NUMBER_MAX){
       // 如果错误次数超限制，则重启系统
@@ -114,7 +122,7 @@ void run_TaskDaemon_Task_on_Core_1(){
                     "TaskDaemon",     /* name of task. */
                     2048,       /* Stack size of task */
                     NULL,        /* parameter of the task */
-                    3,           /* priority of the task */
+                    5,           /* priority of the task */
                     &TaskDaemon_Task_TaskHandle,      /* Task handle to keep track of created task */
                     1);          /* pin task to core 1 */                  
 }

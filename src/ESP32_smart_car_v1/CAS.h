@@ -2,7 +2,7 @@
 #define __CAS__H
 #pragma once
 
-
+#include "SonoLuminAlert.h"
 
 typedef enum
 {
@@ -10,6 +10,7 @@ typedef enum
 } CAS_STATE;
 
 extern CAS_STATE CAS_flag;
+extern SLA_MODE SLA_mode;
 
 int CAS_Init();
 void CAS_Task(void * pvParameters);

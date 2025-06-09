@@ -2,7 +2,10 @@
 
 #include "SonoLuminAlert.h"
 
-const uint8_t tonepin = 26;  // 设置PWM输出引脚
+const uint8_t tonepin = 26;  // 蜂鸣器PWM输出引脚
+const uint8_t light_R_pin = 12; // 灯光红色引脚
+const uint8_t light_G_pin = 14; // 灯光绿色引脚
+const uint8_t light_B_pin = 15; // 灯光蓝色引脚
 
 /* 开机提示音 */
 const uint32_t power_on_tone_tune[]={
@@ -28,19 +31,70 @@ void power_on_tone_play(){
   }
 }
 
+void light_control(LIGHT_MODE Light_mode){
+  switch(Light_mode){
+    case LIGHT_OFF : digitalWrite(light_R_pin,LOW); digitalWrite(light_G_pin,LOW); digitalWrite(light_B_pin,LOW); break;
+    case LIGHT_R : digitalWrite(light_R_pin,HIGH); digitalWrite(light_G_pin,LOW); digitalWrite(light_B_pin,LOW); break;
+    case LIGHT_G : digitalWrite(light_R_pin,LOW); digitalWrite(light_G_pin,HIGH); digitalWrite(light_B_pin,LOW); break;
+    case LIGHT_B : digitalWrite(light_R_pin,LOW); digitalWrite(light_G_pin,LOW); digitalWrite(light_B_pin,HIGH); break;
+    case LIGHT_Y : digitalWrite(light_R_pin,HIGH); digitalWrite(light_G_pin,HIGH); digitalWrite(light_B_pin,LOW); break;
+    case LIGHT_W : digitalWrite(light_R_pin,HIGH); digitalWrite(light_G_pin,HIGH); digitalWrite(light_B_pin,HIGH); break;
+  }
+}
+
 /* 声光报警任务 */
 void SonoLuminAlert_Task(void * pvParameters){
   pinMode(tonepin,OUTPUT);  //  初始化蜂鸣器引脚
+  pinMode(light_R_pin,OUTPUT);  //  初始化灯光引脚
+  pinMode(light_G_pin,OUTPUT);
+  pinMode(light_B_pin,OUTPUT);
   
 
   while(1){
     /* 播放开机提示音 */
-    if(Speaker_mode == SPEAKER_POWER_ON_TONE){
+    if(SLA_mode == SLA_BOOT_OK){
+      light_control(LIGHT_G);
       power_on_tone_play();
-      Speaker_mode = SPEAKER_READY;
+      SLA_mode = SLA_READY; // 降级到就绪态
     }
 
-    vTaskDelay(pdMS_TO_TICKS(1000)); 
+    /* 如果防碰撞被触发 */
+    if(SLA_mode == SLA_CAS_TRIGGERED){
+      light_control(LIGHT_B);
+      /* 持续报警 */
+      while(SLA_mode == SLA_CAS_TRIGGERED){
+        tone(tonepin,C5);
+        delay(100);   
+        noTone(tonepin);
+        vTaskDelay(pdMS_TO_TICKS(500)); 
+      }
+    }
+
+    /* 如果火警被触发 */
+    if(SLA_mode == SLA_FIRE){
+      light_control(LIGHT_Y);
+      while(SLA_mode == SLA_FIRE){
+        tone(tonepin,C6);
+        delay(1000);   
+        noTone(tonepin);
+        vTaskDelay(pdMS_TO_TICKS(2000)); 
+      }
+    }
+
+    /* 如果无法修正的系统错误被触发 */
+    if(SLA_mode == SLA_SYS_ERROR){
+      light_control(LIGHT_R);
+      tone(tonepin,C6);
+      delay(1000);   
+      noTone(tonepin);
+      while(SLA_mode == SLA_SYS_ERROR){
+        vTaskDelay(pdMS_TO_TICKS(5000)); 
+      }
+    }
+
+
+
+    vTaskDelay(pdMS_TO_TICKS(2000)); 
   }
 
   #if DEBUG_MODE == 1
