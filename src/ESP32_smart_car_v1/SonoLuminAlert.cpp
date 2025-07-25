@@ -3,9 +3,9 @@
 #include "SonoLuminAlert.h"
 
 const uint8_t tonepin = 26;  // 蜂鸣器PWM输出引脚
-const uint8_t light_R_pin = 12; // 灯光红色引脚
-const uint8_t light_G_pin = 14; // 灯光绿色引脚
-const uint8_t light_B_pin = 15; // 灯光蓝色引脚
+const uint8_t light_R_pin = 5; // 灯光红色引脚
+const uint8_t light_G_pin = 16; // 灯光绿色引脚
+const uint8_t light_B_pin = 18; // 灯光蓝色引脚
 
 /* 开机提示音 */
 const uint32_t power_on_tone_tune[]={
