@@ -1,0 +1,28 @@
+Keuwlsoft Bluetooth Electronics Panel File
+2020-11-29 21:25:42
+2
+
+*.kwl
+set_grid_size(13,6)
+add_text(14,5,medium,L,LED模式,64,220,220,)
+add_text(14,4,medium,C,右遥杆控制旋转,76,215,213,)
+add_text(14,3,medium,L,LED亮度,73,212,213,)
+add_button(4,5,14,M,)
+add_button(6,5,17,D,)
+add_button(5,5,16,O,)
+add_button(7,5,15,L,)
+add_button(8,5,1,N,n)
+add_switch(9,3,3,d,d,0,0)
+add_slider(0,1,1,0,6,1,l,,1)
+add_slider(0,0,1,0,255,77,B,,1)
+add_slider(6,0,5,0,360,360,A,,0)
+add_slider(8,0,6,0,255,126,r,,0)
+add_slider(4,0,6,-3,3,0,I,,1)
+add_slider(3,2,3,0,180,116,V,,0)
+add_free_pad(0,3,0,255,0,50,,*)
+add_free_pad(10,3,0,255,0,50,R,*)
+add_free_pad(10,0,0,255,0,50,H,*)
+add_buzzer(9,2,1,S,d,true,27.15)
+add_monitor(4,2,5,,3)
+add_send_box(0,2,3,V150A90I0r20,,)
+set_panel_notes(,,,)

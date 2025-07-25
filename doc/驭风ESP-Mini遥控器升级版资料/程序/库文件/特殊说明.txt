@@ -1,0 +1,1 @@
+Adafruit_SSD1306_Wemos_Mini_OLED这个库与另一常用的Adafruit_SSD1306库冲突，编译时需要临时把Adafruit_SSD1306这个库转移或删除

@@ -1,0 +1,17 @@
+Keuwlsoft Bluetooth Electronics Panel File
+2022-04-05 21:13:14
+2
+
+*.kwl
+set_grid_size(10,5)
+add_text(1,1,medium,C,左遥杆控制平移,60,213,212,)
+add_text(8,1,medium,C,右遥杆控制旋转,76,215,213,)
+add_button(0,0,1,S0*,)
+add_button(9,0,1,S100*,)
+add_switch(4,1,1,C,c,0,1)
+add_switch(4,4,2,T,t,0,0)
+add_slider(3,0,1,0,100,46,S,*,0)
+add_free_pad(0,2,0,255,0,100,,*)
+add_free_pad(7,2,0,255,0,100,R,*)
+add_accelerometer(3,2,5,100,A,*)
+set_panel_notes(,,,)

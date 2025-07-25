@@ -1,0 +1,5 @@
+这个WEMOS_motorshield烧录固件可以参考这几个网页的教程
+https://www.wemos.cc/en/latest/d1_mini_shield/motor.html
+https://www.letscontrolit.com/wiki/index.php/WemosMotorshield#Motor_Shield_Firmware_Installation_.28Wemos_V1.0_only.29
+https://hackaday.io/project/18439-motor-shield-reprogramming
+https://blog.csdn.net/danpianj/article/details/62443764
